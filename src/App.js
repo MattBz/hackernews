@@ -9,7 +9,7 @@ const PATH_BASE = 'https://hn.algolia.com/api/v1';
 const PATH_SEARCH = '/search';
 const PARAM_SEARCH = 'query=';
 const PARAM_PAGE = 'page=';
-const PARAM_HPP = 'hitsPerPage='; 
+const PARAM_HPP = 'hitsPerPage=';
 
 class App extends Component {
   constructor(props) {
@@ -80,16 +80,16 @@ class App extends Component {
       return (
         <div className="page">
           <div className="interactions">
-            <Search 
+            <Search
               value={searchTerm}
               onChange={this.onSearchChange}
               onSubmit={this.onSearchSubmit}
-            > 
+            >
               Search
             </Search>
           </div>
           { result &&
-            <Table 
+            <Table
               list={result.hits}
               onDismiss={this.onDismiss}
             />
@@ -108,15 +108,15 @@ class App extends Component {
 
 const Search = ({ value, onChange, onSubmit, children }) =>
   <form onSubmit={onSubmit}>
-    <input 
-      type="text" 
+    <input
+      type="text"
       value={value}
       onChange={onChange}
     />
     <button type="submit">
       {children}
     </button>
-  </form>      
+  </form>
 
 
 const Table = ({ list, onDismiss}) =>
@@ -144,8 +144,8 @@ const Table = ({ list, onDismiss}) =>
             </Button>
           </span>
         </div>
-    )}   
-  </div>   
+    )}
+  </div>
 
 const Button = ({ onClick, className = '', children }) =>
   <button
