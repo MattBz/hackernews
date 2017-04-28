@@ -16,10 +16,13 @@ class App extends Component {
     super(props);
 
     this.state = {
-      result: null,
-      searchTerm: DEFAULT_QUERY
+      results: null,
+      searchKey: '',
+      searchTerm: DEFAULT_QUERY,
+      isLoading: false
     }
 
+    this.needsToSearchTopstories = this.needsToSearchTopstories.bind(this);
     this.setSearchTopstories = this.setSearchTopstories.bind(this);
     this.fetchSearchTopstories = this.fetchSearchTopstories.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
@@ -29,9 +32,10 @@ class App extends Component {
 
   setSearchTopstories(result) {
     const { hits, page } = result;
+    const { searchKey, results } = this.state;
 
-    const oldHits = page !==0
-      ? this.state.result.hits
+    const oldHits = results && results[searchKey]
+      ? results[searchKey].hits
       : [];
 
     const updatedHits = [
@@ -40,11 +44,21 @@ class App extends Component {
     ];
 
     this.setState({
-      result: { hits: updatedHits, page }
+      results: {
+        ...results,
+        [searchKey]: { hits: updatedHits, page }
+      },
+      isLoading: false
     });
   }
 
+  needsToSearchTopstories(searchTerm) {
+    return !this.state.results[searchTerm];
+  }
+
   fetchSearchTopstories(searchTerm, page) {
+    this.setState({ isLoading: true });
+
     fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
       .then(response => response.json())
       .then(result => this.setSearchTopstories(result)
@@ -53,6 +67,7 @@ class App extends Component {
 
   componentDidMount() {
     const { searchTerm } = this.state;
+    this.setState({ searchKey: searchTerm });
     this.fetchSearchTopstories(searchTerm, DEFAULT_PAGE);
   }
 
@@ -61,22 +76,36 @@ class App extends Component {
   }
 
   onSearchSubmit(event) {
-    event.preventDefault();
-
     const { searchTerm } = this.state;
-    this.fetchSearchTopstories(searchTerm, DEFAULT_PAGE);
+
+    this.setState({ searchKey: searchTerm });
+
+    if(this.needsToSearchTopstories(searchTerm)) {
+      this.fetchSearchTopstories(searchTerm, DEFAULT_PAGE);
+    }
+
+    event.preventDefault();
   }
 
   onDismiss(id) {
-    const updatedHits = this.state.result.hits.filter(item => item.objectID !== id);
+    const { searchKey, results } = this.state;
+    const { hits, page } = results[searchKey];
+
+    const isNotId = item => item.objectID !== id;
+    const updatedHits = hits.filter(isNotId);
+
     this.setState({
-      result: { ...this.state.result, hits: updatedHits}
-     });
+      results: {
+      ...results,
+      [searchKey]: { hits: updatedHits, page }
+      }
+    });
   }
 
   render() {
-      const { searchTerm, result } = this.state;
-      const page = (result && result.page) || 0;
+      const { searchTerm, results, searchKey, isLoading } = this.state;
+      const page = (results && results[searchKey] && results[searchKey].page) || 0;
+      const list = (results && results[searchKey] && results[searchKey].hits) || [];
       return (
         <div className="page">
           <div className="interactions">
@@ -88,18 +117,17 @@ class App extends Component {
               Search
             </Search>
           </div>
-          { result &&
-            <Table
-              list={result.hits}
-              onDismiss={this.onDismiss}
-            />
-          }
+          <Table
+            list={list}
+            onDismiss={this.onDismiss}
+          />
           <div className="interactions">
-            <Button
-              onClick={() => this.fetchSearchTopstories(searchTerm, page + 1)}
+            <ButtonWithLoading
+            isLoading={isLoading}
+            onClick={() => this.fetchSearchTopstories(searchKey, page + 1)}
             >
-              More
-            </Button>
+            More
+           </ButtonWithLoading>
           </div>
         </div>
       );
@@ -156,4 +184,18 @@ const Button = ({ onClick, className = '', children }) =>
     {children}
   </button>
 
+const Loading = () =>
+  <div>Loading ...</div>
+
+const withLoading = (Component) => ({ isLoading, ...rest }) =>
+  isLoading ? <Loading /> : <Component { ...rest } />
+
+const ButtonWithLoading = withLoading(Button);
+
 export default App;
+
+export {
+  Button,
+  Search,
+  Table
+}
